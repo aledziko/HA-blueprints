@@ -1,0 +1,64 @@
+blueprint:
+  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter)
+  description: 'Full-featured automation for the IKEA MYGGSPRAY E2494 Matter motion sensor. 
+    Supports arbitrary actions for both motion detected and motion stopped events. 
+    Ideal for controlling lights, scripts, or custom hardware like light-control boards.
+    '
+  domain: automation
+  author: aledziko
+  input:
+    motion_entity:
+      name: MYGGSPRAY Motion Sensor
+      description: Select the MYGGSPRAY motion sensor entity (binary_sensor).
+      selector:
+        entity:
+          filter:
+            - device_class: occupancy
+              domain: binary_sensor
+            - device_class: motion
+              domain: binary_sensor
+    no_motion_wait:
+      name: Wait time
+      description: Time to wait after last motion is detected before running the "off" action.
+      default: 120
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+    motion_on_action:
+      name: Action to run when motion is detected
+      description: The actions to perform when the sensor detects motion.
+      default: []
+      selector:
+        action: {}
+    motion_off_action:
+      name: Action to run when motion stops
+      description: The actions to perform when the sensor stops detecting motion and the wait time has elapsed.
+      default: []
+      selector:
+        action: {}
+
+# If motion is detected within the delay, we restart the script.
+mode: restart
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input motion_entity
+    from: "off"
+    to: "on"
+
+actions:
+  - alias: "Run motion detected action"
+    sequence: !input motion_on_action
+  - alias: "Wait until there is no motion"
+    wait_for_trigger:
+      - trigger: state
+        entity_id: !input motion_entity
+        from: "on"
+        to: "off"
+  - alias: "Wait the number of seconds that has been set"
+    delay: !input no_motion_wait
+  - alias: "Run motion stopped action"
+    sequence: !input motion_off_action
