@@ -1,16 +1,16 @@
 blueprint:
-  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter)
+  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter) v2.0
   description: 'Full-featured automation for the IKEA MYGGSPRAY E2494 Matter motion sensor. 
-    Supports arbitrary actions for both motion detected and motion stopped events. 
-    Ideal for controlling lights, scripts, or custom hardware like light-control boards.
+    Supports independent actions for motion, illuminance (high/low), and battery alerts.
     '
   domain: automation
   source_url: https://github.com/aledziko/HA-blueprints/blob/main/IKEA/Matter/ikea-myggspray-e2494/ikea-myggspray-e2494-matter-motion-sensor.yaml
   author: aledziko
   input:
+    # Motion Settings
     motion_entity:
       name: MYGGSPRAY Motion Sensor
-      description: Select the MYGGSPRAY motion sensor entity (binary_sensor).
+      description: Select the MYGGSPRAY motion sensor (binary_sensor).
       selector:
         entity:
           filter:
@@ -19,7 +19,7 @@ blueprint:
             - device_class: motion
               domain: binary_sensor
     no_motion_wait:
-      name: Wait time
+      name: Wait time (Motion)
       description: Time to wait after last motion is detected before running the "off" action.
       default: 120
       selector:
@@ -28,38 +28,174 @@ blueprint:
           max: 3600
           unit_of_measurement: seconds
     motion_on_action:
-      name: Action to run when motion is detected
-      description: The actions to perform when the sensor detects motion.
+      name: "Action: Motion Detected"
+      description: Run when motion is detected (and dark enough).
       default: []
       selector:
         action: {}
     motion_off_action:
-      name: Action to run when motion stops
-      description: The actions to perform when the sensor stops detecting motion and the wait time has elapsed.
+      name: "Action: Motion Stopped"
+      description: Run after the sensor stops detecting motion and wait time elapsed.
+      default: []
+      selector:
+        action: {}
+    # Illuminance Settings
+    illuminance_entity:
+      name: (Optional) Illuminance Sensor
+      description: Select the light sensor (sensor.illuminance).
+      default: none
+      selector:
+        entity:
+          filter:
+            domain: sensor
+            device_class: illuminance
+    motion_cutoff:
+      name: (Optional) Motion Light Cutoff
+      description: Only trigger "Motion Detected" action if LUX is BELOW this value (0 to disable).
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3000
+          unit_of_measurement: lux
+    illuminance_high_threshold:
+      name: (Optional) Light High Threshold
+      description: Trigger "High Action" when LUX goes ABOVE this value (e.g. 500 lx).
+      default: 500
+      selector:
+        number:
+          min: 0
+          max: 3000
+          unit_of_measurement: lux
+    high_action:
+      name: "Action: Light High"
+      description: Run when light exceeds threshold (e.g. close curtains).
+      default: []
+      selector:
+        action: {}
+    illuminance_low_threshold:
+      name: (Optional) Light Low Threshold
+      description: Trigger "Low Action" when LUX goes BELOW this value (e.g. 5 lx).
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 3000
+          unit_of_measurement: lux
+    low_action:
+      name: "Action: Light Low"
+      description: Run when light drops below threshold (e.g. open curtains).
+      default: []
+      selector:
+        action: {}
+    # Battery Settings
+    battery_entity:
+      name: (Optional) Battery Sensor
+      description: Select the battery level sensor (sensor.battery).
+      default: none
+      selector:
+        entity:
+          filter:
+            domain: sensor
+            device_class: battery
+    battery_low_threshold:
+      name: (Optional) Battery Low Level
+      description: Threshold for battery alert (%).
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    battery_low_action:
+      name: "Action: Battery Low"
+      description: Run when battery drops below threshold.
       default: []
       selector:
         action: {}
 
-# If motion is detected within the delay, we restart the script.
-mode: restart
+# Parallel mode allows motion timers and battery/light alerts to run concurrently.
+mode: parallel
 max_exceeded: silent
+
+trigger_variables:
+  motion_entity_input: !input motion_entity
+  illuminance_entity_input: !input illuminance_entity
+  motion_cutoff_input: !input motion_cutoff
+  high_threshold_input: !input illuminance_high_threshold
+  low_threshold_input: !input illuminance_low_threshold
+  battery_entity_input: !input battery_entity
+  battery_threshold_input: !input battery_low_threshold
 
 triggers:
   - trigger: state
     entity_id: !input motion_entity
     from: "off"
     to: "on"
+    id: motion_detected
+  # Template triggers for optional entities
+  - trigger: template
+    value_template: >
+      {{ illuminance_entity_input != none and 
+         states(illuminance_entity_input) | is_number and 
+         states(illuminance_entity_input) | float(0) > high_threshold_input | float(100000) }}
+    id: light_high
+  - trigger: template
+    value_template: >
+      {{ illuminance_entity_input != none and 
+         states(illuminance_entity_input) | is_number and 
+         states(illuminance_entity_input) | float(100000) < low_threshold_input | float(-1) }}
+    id: light_low
+  - trigger: template
+    value_template: >
+      {{ battery_entity_input != none and 
+         states(battery_entity_input) | is_number and 
+         states(battery_entity_input) | float(100) < battery_threshold_input | float(-1) }}
+    id: battery_low
 
 actions:
-  - alias: "Run motion detected action"
-    sequence: !input motion_on_action
-  - alias: "Wait until there is no motion"
-    wait_for_trigger:
-      - trigger: state
-        entity_id: !input motion_entity
-        from: "on"
-        to: "off"
-  - alias: "Wait the number of seconds that has been set"
-    delay: !input no_motion_wait
-  - alias: "Run motion stopped action"
-    sequence: !input motion_off_action
+  - choose:
+      # MOTION DETECTED
+      - conditions:
+          - condition: trigger
+            id: motion_detected
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: "{{ illuminance_entity_input == none or states(illuminance_entity_input) in ['unknown', 'unavailable', 'none'] }}"
+              - condition: template
+                value_template: "{{ motion_cutoff_input == 0 }}"
+              - condition: template
+                value_template: "{{ states(illuminance_entity_input) | float(99999) <= (motion_cutoff_input | float) }}"
+        sequence:
+          - choose: []
+            default: !input motion_on_action
+          - wait_for_trigger:
+              - trigger: state
+                entity_id: !input motion_entity
+                from: "on"
+                to: "off"
+          - delay: !input no_motion_wait
+          # Safety check: Only turn off if the sensor is STILL currently 'off'
+          - condition: template
+            value_template: "{{ is_state(motion_entity_input, 'off') }}"
+          - choose: []
+            default: !input motion_off_action
+
+      # LIGHT HIGH
+      - conditions:
+          - condition: trigger
+            id: light_high
+        sequence: !input high_action
+
+      # LIGHT LOW
+      - conditions:
+          - condition: trigger
+            id: light_low
+        sequence: !input low_action
+
+      # BATTERY LOW
+      - conditions:
+          - condition: trigger
+            id: battery_low
+        sequence: !input battery_low_action

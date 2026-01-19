@@ -18,11 +18,15 @@ HA-blueprints/
 
 ## 🚀 Blueprints Overview
 
-### IKEA MYGGSPRAY E2494 Motion Sensor (Matter)
-- **Description**: Flexible action-based motion automation. Supports arbitrary actions for both motion detected and motion stopped events.
+### IKEA MYGGSPRAY E2494 Motion Sensor (Matter) v2.0
+- **Description**: Pro-grade, multi-functional automation. Supports motion, illuminance (lux thresholds), and battery alerts.
 - **Protocol**: Matter over Thread
 - **Blueprint URL**: [Import Link](https://github.com/aledziko/HA-blueprints/blob/main/IKEA/Matter/ikea-myggspray-e2494/ikea-myggspray-e2494-matter-motion-sensor.yaml)
-- **Key Features**: Trigger any action in HA, customizable wait time delay, and "restart" mode for high reliability.
+- **Key Features**: 
+    - **Dynamic Motion**: Only triggers lights if below a LUX cutoff (optional, default 0).
+    - **Sunlight Control**: Separate "High" and "Low" actions tuned for indoor ranges (0-3000 lx).
+    - **Battery Alerts**: Get notified when sensor batteries run low.
+    - **Parallel Mode**: High reliability—multiple sensors (motion, light, battery) never block each other.
 
 ## 🛠️ How to Import
 
