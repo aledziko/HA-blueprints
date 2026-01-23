@@ -1,0 +1,158 @@
+blueprint:
+  name: IKEA MYGGBETT E2492 Door/Window Sensor (Matter) v1.0
+  description: 'Full-featured automation for the IKEA MYGGBETT E2492 Matter door/window sensor. 
+    Supports immediate and delayed actions for both opened and closed states, plus battery alerts.
+    '
+  domain: automation
+  source_url: https://github.com/aledziko/HA-blueprints/blob/main/IKEA/Matter/ikea-myggbett-e2492/ikea-myggbett-e2492-matter-door-sensor.yaml
+  author: aledziko
+  input:
+    door_entity:
+      name: MYGGBETT Door Sensor
+      description: Select the MYGGBETT door/window sensor (binary_sensor).
+      selector:
+        entity:
+          filter:
+            - device_class: door
+              domain: binary_sensor
+            - device_class: window
+              domain: binary_sensor
+            - device_class: opening
+              domain: binary_sensor
+    # Opened State
+    action_opened_immediate:
+      name: "Action: Door Opened (Immediate)"
+      description: Run immediately when the door is opened.
+      default: []
+      selector:
+        action: {}
+    wait_opened_long:
+      name: "Wait time (Opened Long)"
+      description: Time to wait before running the "Opened Long" action (0 to disable).
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+    action_opened_long:
+      name: "Action: Door Opened (Long)"
+      description: Run if the door remains open for the specified wait time.
+      default: []
+      selector:
+        action: {}
+    # Closed State
+    action_closed_immediate:
+      name: "Action: Door Closed (Immediate)"
+      description: Run immediately when the door is closed.
+      default: []
+      selector:
+        action: {}
+    wait_closed_long:
+      name: "Wait time (Closed Long)"
+      description: Time to wait before running the "Closed Long" action (0 to disable).
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+    action_closed_long:
+      name: "Action: Door Closed (Long)"
+      description: Run if the door remains closed for the specified wait time.
+      default: []
+      selector:
+        action: {}
+    # Battery Settings
+    battery_entity:
+      name: (Optional) Battery Sensor
+      description: Select the battery level sensor (sensor.battery).
+      default: none
+      selector:
+        entity:
+          filter:
+            domain: sensor
+            device_class: battery
+    battery_low_threshold:
+      name: (Optional) Battery Low Level
+      description: Threshold for battery alert (%).
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    battery_low_action:
+      name: "Action: Battery Low"
+      description: Run when battery drops below threshold.
+      default: []
+      selector:
+        action: {}
+
+mode: parallel
+max_exceeded: silent
+
+trigger_variables:
+  door_entity_input: !input door_entity
+  battery_entity_input: !input battery_entity
+  battery_threshold_input: !input battery_low_threshold
+  wait_opened_long_input: !input wait_opened_long
+  wait_closed_long_input: !input wait_closed_long
+
+triggers:
+  - trigger: state
+    entity_id: !input door_entity
+    from: "off"
+    to: "on"
+    id: door_opened
+  - trigger: state
+    entity_id: !input door_entity
+    from: "on"
+    to: "off"
+    id: door_closed
+  - trigger: template
+    value_template: >
+      {{ battery_entity_input != none and 
+         states(battery_entity_input) | is_number and 
+         states(battery_entity_input) | float(100) < battery_threshold_input | float(-1) }}
+    id: battery_low
+
+actions:
+  - choose:
+      # DOOR OPENED
+      - conditions:
+          - condition: trigger
+            id: door_opened
+        sequence:
+          - choose: []
+            default: !input action_opened_immediate
+          - condition: template
+            value_template: "{{ wait_opened_long_input | int > 0 }}"
+          - delay: !input wait_opened_long
+          # Safety check: Only run if the door is STILL open
+          - condition: template
+            value_template: "{{ is_state(door_entity_input, 'on') }}"
+          - choose: []
+            default: !input action_opened_long
+
+      # DOOR CLOSED
+      - conditions:
+          - condition: trigger
+            id: door_closed
+        sequence:
+          - choose: []
+            default: !input action_closed_immediate
+          - condition: template
+            value_template: "{{ wait_closed_long_input | int > 0 }}"
+          - delay: !input wait_closed_long
+          # Safety check: Only run if the door is STILL closed
+          - condition: template
+            value_template: "{{ is_state(door_entity_input, 'off') }}"
+          - choose: []
+            default: !input action_closed_long
+
+      # BATTERY LOW
+      - conditions:
+          - condition: trigger
+            id: battery_low
+        sequence: !input battery_low_action
