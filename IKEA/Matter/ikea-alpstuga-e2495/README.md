@@ -1,6 +1,6 @@
 # 🌬️ IKEA ALPSTUGA E2495 Air Quality Sensor (Matter)
 
-Pro-grade automation for the **IKEA ALPSTUGA E2495** Matter Air Quality sensor. This blueprint allows you to trigger specific actions when any environmental metric—CO2, PM2.5, Air Quality Index, Temperature, or Humidity—crosses your custom thresholds.
+Pro-grade automation for the **IKEA ALPSTUGA E2495** Matter Air Quality sensor. This blueprint allows you to trigger specific actions when any environmental metric (CO2, PM2.5, Air Quality Index, Temperature, or Humidity) crosses your custom thresholds.
 
 > [!NOTE]
 > The **Air Quality** entity is a general "Air Quality Index" (AQI) calculated by the device (usually based on PM2.5 and CO2 levels). While the ALPSTUGA does not have a dedicated VOC sensor, this summary state is a great way to trigger whole-room air clear actions.
