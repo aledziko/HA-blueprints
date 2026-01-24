@@ -2,7 +2,7 @@
 
 Full-featured automation for the **IKEA MYGGSPRAY E2494** Matter motion sensor. This blueprint provides a highly flexible way to automate motion-based events, with integrated support for illuminance (LUX), sunlight-aware actions, and battery monitoring.
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint URL pre-filled.](upload://seon4JUbAq1rQha8zTVY8Sil7xF.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Faledziko%2FHA-blueprints%2Fblob%2Fmain%2FIKEA%2FMatter%2Fikea-myggspray-e2494%2Fikea-myggspray-e2494-matter-motion-sensor.yaml)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint URL pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Faledziko%2FHA-blueprints%2Fblob%2Fmain%2FIKEA%2FMatter%2Fikea-myggspray-e2494%2Fikea-myggspray-e2494-matter-motion-sensor.yaml)
 
 ## 🌟 Key Features
 

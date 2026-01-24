@@ -2,7 +2,7 @@
 
 Full-featured automation for the **IKEA MYGGBETT E2492** Matter Door/Window Sensor. This blueprint supports multi-stage actions for both opened and closed states, allowing you to handle immediate responses and delayed "safeguard" or notification actions in a single automation.
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint URL pre-filled.](upload://seon4JUbAq1rQha8zTVY8Sil7xF.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Faledziko%2FHA-blueprints%2Fblob%2Fmain%2FIKEA%2FMatter%2Fikea-myggbett-e2492%2Fikea-myggbett-e2492-matter-door-sensor.yaml)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint URL pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Faledziko%2FHA-blueprints%2Fblob%2Fmain%2FIKEA%2FMatter%2Fikea-myggbett-e2492%2Fikea-myggbett-e2492-matter-door-sensor.yaml)
 
 ## 🚀 Benefits
 
