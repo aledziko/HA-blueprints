@@ -32,6 +32,21 @@ blueprint:
       default: []
       selector:
         action: {}
+    co2_low_threshold:
+      name: CO2 Low Threshold
+      description: Trigger when CO2 goes BELOW this value (ppm).
+      default: 800
+      selector:
+        number:
+          min: 400
+          max: 5000
+          unit_of_measurement: "ppm"
+    action_co2_low:
+      name: "Action: CO2 Low"
+      description: Run when CO2 is low (e.g., stop ventilation).
+      default: []
+      selector:
+        action: {}
 
     # Particulate Matter (PM2.5) Settings
     pm25_sensor:
@@ -57,6 +72,21 @@ blueprint:
       default: []
       selector:
         action: {}
+    pm25_low_threshold:
+      name: PM2.5 Low Threshold
+      description: Trigger when PM2.5 goes BELOW this value (µg/m³).
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 500
+          unit_of_measurement: "µg/m³"
+    action_pm25_low:
+      name: "Action: PM2.5 Low"
+      description: Run when PM2.5 is low (e.g., stop Air Purifier).
+      default: []
+      selector:
+        action: {}
 
     # Air Quality Index (AQI) Settings
     aqi_sensor:
@@ -69,8 +99,8 @@ blueprint:
             - device_class: enum
               integration: matter
     aqi_trigger_states:
-      name: Air Quality Trigger States
-      description: Action runs when the sensor switches to any of these states.
+      name: Air Quality Alert States
+      description: Action runs when the sensor switches to any of these "warning" states.
       default:
         - "poor"
         - "very_poor"
@@ -87,6 +117,35 @@ blueprint:
             - "very_poor"
             - "extremely_poor"
             - "unknown"
+    action_aqi_high:
+      name: "Action: Air Quality Alert"
+      description: Run when the general air quality index becomes bad.
+      default: []
+      selector:
+        action: {}
+    aqi_low_states:
+      name: Air Quality Normal States
+      description: Action runs when the sensor switches to any of these "clean" states.
+      default:
+        - "good"
+        - "fair"
+      selector:
+        select:
+          multiple: true
+          options:
+            - "good"
+            - "fair"
+            - "moderate"
+            - "poor"
+            - "very_poor"
+            - "extremely_poor"
+            - "unknown"
+    action_aqi_low:
+      name: "Action: Air Quality Normal"
+      description: Run when the general air quality index becomes good again.
+      default: []
+      selector:
+        action: {}
     stabilization_time:
       name: Air Quality Stabilization
       description: "How long the Air Quality Summary must stay in a new state before triggering. (Prevents flapping). Set to 0 for instant."
@@ -96,13 +155,6 @@ blueprint:
           min: 0
           max: 3600
           unit_of_measurement: "sec"
-
-    action_aqi_high:
-      name: "Action: Air Quality Alert"
-      description: Run when the general air quality index becomes bad.
-      default: []
-      selector:
-        action: {}
 
     # Temperature Settings
     temp_sensor:
@@ -187,8 +239,11 @@ max_exceeded: silent
 
 trigger_variables:
   co2_high_threshold_input: !input co2_high_threshold
+  co2_low_threshold_input: !input co2_low_threshold
   pm25_high_threshold_input: !input pm25_high_threshold
+  pm25_low_threshold_input: !input pm25_low_threshold
   aqi_trigger_states_input: !input aqi_trigger_states
+  aqi_low_states_input: !input aqi_low_states
   temp_high_threshold_input: !input temp_high_threshold
   temp_low_threshold_input: !input temp_low_threshold
   humidity_high_threshold_input: !input humidity_high_threshold
@@ -201,15 +256,29 @@ triggers:
     above: !input co2_high_threshold
     id: co2_high
   - trigger: numeric_state
+    entity_id: !input co2_sensor
+    below: !input co2_low_threshold
+    id: co2_low
+  - trigger: numeric_state
     entity_id: !input pm25_sensor
     above: !input pm25_high_threshold
     id: pm25_high
+  - trigger: numeric_state
+    entity_id: !input pm25_sensor
+    below: !input pm25_low_threshold
+    id: pm25_low
   - trigger: state
     entity_id: !input aqi_sensor
     to: !input aqi_trigger_states
     for:
       seconds: !input stabilization_time
     id: aqi_high
+  - trigger: state
+    entity_id: !input aqi_sensor
+    to: !input aqi_low_states
+    for:
+      seconds: !input stabilization_time
+    id: aqi_low
   - trigger: numeric_state
     entity_id: !input temp_sensor
     above: !input temp_high_threshold
@@ -235,12 +304,24 @@ actions:
         sequence: !input action_co2_high
       - conditions:
           - condition: trigger
+            id: co2_low
+        sequence: !input action_co2_low
+      - conditions:
+          - condition: trigger
             id: pm25_high
         sequence: !input action_pm25_high
       - conditions:
           - condition: trigger
+            id: pm25_low
+        sequence: !input action_pm25_low
+      - conditions:
+          - condition: trigger
             id: aqi_high
         sequence: !input action_aqi_high
+      - conditions:
+          - condition: trigger
+            id: aqi_low
+        sequence: !input action_aqi_low
       - conditions:
           - condition: trigger
             id: temp_high

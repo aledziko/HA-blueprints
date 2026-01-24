@@ -10,7 +10,7 @@ Pro-grade automation for the **IKEA ALPSTUGA E2495** Matter Air Quality sensor. 
 ## 🌟 Key Features
 
 *   **Five Environmental Triggers**: Dedicated actions for CO2, PM2.5, Air Quality summary, Temperature, and Humidity.
-*   **Flexible Thresholds**: Set numeric cutoffs for sensors, or select specific states (e.g., "Poor") for the General Air Quality summary.
+*   **Dual-Phase Actions**: Set numeric cutoffs (CO2, PM2.5, Temp, Humidity) or state lists (AQI Summary) for both "Alert" and "Normal" phases. This allows you to start and stop devices automatically as conditions change.
 *   **Stabilization Time**: Prevent notification "flapping" by requiring states to remain active for a configurable duration (e.g., 30 seconds).
 *   **Parallel Execution**: Handles multiple environmental shifts concurrently (e.g., boosting the air purifier while notifying about high CO2).
 
