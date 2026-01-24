@@ -1,0 +1,155 @@
+blueprint:
+  name: IKEA KLIPPBOK E2493 Leak Sensor (Matter) v1.0
+  description: 'Full-featured automation for the IKEA KLIPPBOK E2493 Matter leak sensor. 
+    Supports immediate and delayed actions for both wet (leak) and dry (clear) states, plus battery alerts.
+    Inspired by the community blueprint by [censay](https://community.home-assistant.io/t/ikea-klippbok-matter-over-thread-leak-detector-e2493/968818).
+    '
+  domain: automation
+  source_url: https://github.com/aledziko/HA-blueprints/blob/main/IKEA/Matter/ikea-klippbok-e2493/ikea-klippbok-e2493-matter-leak-sensor.yaml
+  author: aledziko
+  input:
+    moisture_sensor:
+      name: KLIPPBOK Leak Sensor
+      description: Select the KLIPPBOK leak sensor (binary_sensor).
+      selector:
+        entity:
+          filter:
+            - device_class: moisture
+              domain: binary_sensor
+    # Wet (Leak Detected) State
+    action_wet_immediate:
+      name: "Action: Leak Detected (Immediate)"
+      description: Run immediately when water is detected.
+      default: []
+      selector:
+        action: {}
+    wait_wet_long:
+      name: "Wait time (Still Wet)"
+      description: Time to wait before running the "Still Wet" action (0 to disable).
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+    action_wet_long:
+      name: "Action: Still Wet (Long)"
+      description: Run if the sensor remains wet for the specified wait time.
+      default: []
+      selector:
+        action: {}
+    # Dry (All Clear) State
+    action_dry_immediate:
+      name: "Action: Dry (Immediate)"
+      description: Run immediately when the sensor becomes dry.
+      default: []
+      selector:
+        action: {}
+    wait_dry_long:
+      name: "Wait time (Still Dry)"
+      description: Time to wait before running the "Still Dry" action (0 to disable).
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+    action_dry_long:
+      name: "Action: Still Dry (Long)"
+      description: Run if the sensor remains dry for the specified wait time.
+      default: []
+      selector:
+        action: {}
+    # Battery Settings
+    battery_entity:
+      name: (Optional) Battery Sensor
+      description: Select the battery level sensor (sensor.battery).
+      default: none
+      selector:
+        entity:
+          filter:
+            domain: sensor
+            device_class: battery
+    battery_low_threshold:
+      name: (Optional) Battery Low Level
+      description: Threshold for battery alert (%).
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    battery_low_action:
+      name: "Action: Battery Low"
+      description: Run when battery drops below threshold.
+      default: []
+      selector:
+        action: {}
+
+mode: parallel
+max_exceeded: silent
+
+trigger_variables:
+  moisture_sensor_input: !input moisture_sensor
+  battery_entity_input: !input battery_entity
+  battery_threshold_input: !input battery_low_threshold
+  wait_wet_long_input: !input wait_wet_long
+  wait_dry_long_input: !input wait_dry_long
+
+triggers:
+  - trigger: state
+    entity_id: !input moisture_sensor
+    from: "off"
+    to: "on"
+    id: leak_detected
+  - trigger: state
+    entity_id: !input moisture_sensor
+    from: "on"
+    to: "off"
+    id: leak_cleared
+  - trigger: template
+    value_template: >
+      {{ battery_entity_input != none and 
+         states(battery_entity_input) | is_number and 
+         states(battery_entity_input) | float(100) < battery_threshold_input | float(-1) }}
+    id: battery_low
+
+actions:
+  - choose:
+      # LEAK DETECTED
+      - conditions:
+          - condition: trigger
+            id: leak_detected
+        sequence:
+          - choose: []
+            default: !input action_wet_immediate
+          - condition: template
+            value_template: "{{ wait_wet_long_input | int > 0 }}"
+          - delay: !input wait_wet_long
+          # Safety check: Only run if the sensor is STILL wet
+          - condition: template
+            value_template: "{{ is_state(moisture_sensor_input, 'on') }}"
+          - choose: []
+            default: !input action_wet_long
+
+      # LEAK CLEARED
+      - conditions:
+          - condition: trigger
+            id: leak_cleared
+        sequence:
+          - choose: []
+            default: !input action_dry_immediate
+          - condition: template
+            value_template: "{{ wait_dry_long_input | int > 0 }}"
+          - delay: !input wait_dry_long
+          # Safety check: Only run if the sensor is STILL dry
+          - condition: template
+            value_template: "{{ is_state(moisture_sensor_input, 'off') }}"
+          - choose: []
+            default: !input action_dry_long
+
+      # BATTERY LOW
+      - conditions:
+          - condition: trigger
+            id: battery_low
+        sequence: !input battery_low_action
