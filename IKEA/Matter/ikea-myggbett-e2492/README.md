@@ -19,6 +19,8 @@ Full-featured automation for the **IKEA MYGGBETT E2492** Matter Door/Window Sens
 *   **Garage Door Security**:
     *   **Open Immediate**: Turn on garage light.
     *   **Open Long**: After 15 minutes, notify "Garage door left open!" or automatically close it.
+*   **🔋 Maintenance**: 
+    *   **Battery Low**: Receive a notification when the battery level drops below 30%, giving you plenty of time to recharge or swap.
 
 ## 🛠️ Requirements
 

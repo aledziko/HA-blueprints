@@ -1,0 +1,172 @@
+blueprint:
+  name: IKEA TIMMERFLOTTE E2314 Temp/Humidity Sensor (Matter) v1.0
+  description: 'Pro-grade automation for the IKEA TIMMERFLOTTE Matter temperature and humidity sensor. 
+    Allows triggering actions (HVAC, ventilation, notifications) based on high/low temperature and humidity thresholds, 
+    plus integrated battery monitoring.
+    '
+  domain: automation
+  source_url: https://github.com/aledziko/HA-blueprints/blob/main/IKEA/Matter/ikea-timmerflotte-e2314/ikea-timmerflotte-e2314-matter-temp-humidity-sensor.yaml
+  author: aledziko
+  input:
+    temp_sensor:
+      name: Temperature Sensor
+      description: Select the temperature sensor entity.
+      selector:
+        entity:
+          filter:
+            - device_class: temperature
+    humidity_sensor:
+      name: Humidity Sensor
+      description: Select the humidity sensor entity.
+      selector:
+        entity:
+          filter:
+            - device_class: humidity
+    # Temperature Thresholds
+    temp_high_threshold:
+      name: High Temperature Threshold
+      description: Action runs when temperature goes ABOVE this value.
+      default: 25
+      selector:
+        number:
+          min: -20
+          max: 50
+          unit_of_measurement: "°C"
+          mode: box
+    action_temp_high:
+      name: "Action: High Temperature"
+      description: Run when temperature is above the high threshold (e.g., turn on cooling).
+      default: []
+      selector:
+        action: {}
+    temp_low_threshold:
+      name: Low Temperature Threshold
+      description: Action runs when temperature goes BELOW this value.
+      default: 18
+      selector:
+        number:
+          min: -20
+          max: 50
+          unit_of_measurement: "°C"
+          mode: box
+    action_temp_low:
+      name: "Action: Low Temperature"
+      description: Run when temperature is below the low threshold (e.g., turn on heating).
+      default: []
+      selector:
+        action: {}
+    # Humidity Thresholds
+    humidity_high_threshold:
+      name: High Humidity Threshold
+      description: Action runs when humidity goes ABOVE this value.
+      default: 70
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+    action_humidity_high:
+      name: "Action: High Humidity"
+      description: Run when humidity is above high threshold (e.g., turn on ventilation/recuperation).
+      default: []
+      selector:
+        action: {}
+    humidity_low_threshold:
+      name: Low Humidity Threshold
+      description: Action runs when humidity goes BELOW this value.
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+    action_humidity_low:
+      name: "Action: Low Humidity"
+      description: Run when humidity is below low threshold (e.g., turn on humidifier).
+      default: []
+      selector:
+        action: {}
+    # Battery Settings
+    battery_entity:
+      name: (Optional) Battery Sensor
+      description: Select the battery level sensor.
+      default: none
+      selector:
+        entity:
+          filter:
+            - device_class: battery
+    battery_low_threshold:
+      name: (Optional) Battery Low Level
+      description: Threshold for battery alert (%).
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    battery_low_action:
+      name: "Action: Battery Low"
+      description: Run when battery drops below threshold.
+      default: []
+      selector:
+        action: {}
+
+mode: parallel
+max_exceeded: silent
+
+trigger_variables:
+  temp_high_threshold_input: !input temp_high_threshold
+  temp_low_threshold_input: !input temp_low_threshold
+  humidity_high_threshold_input: !input humidity_high_threshold
+  humidity_low_threshold_input: !input humidity_low_threshold
+  battery_entity_input: !input battery_entity
+  battery_threshold_input: !input battery_low_threshold
+
+triggers:
+  - trigger: numeric_state
+    entity_id: !input temp_sensor
+    above: !input temp_high_threshold
+    id: temp_high
+  - trigger: numeric_state
+    entity_id: !input temp_sensor
+    below: !input temp_low_threshold
+    id: temp_low
+  - trigger: numeric_state
+    entity_id: !input humidity_sensor
+    above: !input humidity_high_threshold
+    id: humidity_high
+  - trigger: numeric_state
+    entity_id: !input humidity_sensor
+    below: !input humidity_low_threshold
+    id: humidity_low
+  - trigger: template
+    value_template: >
+      {{ battery_entity_input != none and 
+         states(battery_entity_input) | is_number and 
+         states(battery_entity_input) | float(100) < battery_threshold_input | float(-1) }}
+    id: battery_low
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: temp_high
+        sequence: !input action_temp_high
+      - conditions:
+          - condition: trigger
+            id: temp_low
+        sequence: !input action_temp_low
+      - conditions:
+          - condition: trigger
+            id: humidity_high
+        sequence: !input action_humidity_high
+      - conditions:
+          - condition: trigger
+            id: humidity_low
+        sequence: !input action_humidity_low
+      - conditions:
+          - condition: trigger
+            id: battery_low
+        sequence: !input battery_low_action

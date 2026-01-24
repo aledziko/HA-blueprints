@@ -1,0 +1,12 @@
+# OS junk
+.DS_Store
+Thumbs.db
+*.swp
+
+# HA/Python artifacts
+__pycache__/
+*.pyc
+
+# IDE settings
+.vscode/
+.idea/

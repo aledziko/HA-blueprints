@@ -12,6 +12,18 @@ Full-featured automation for the **IKEA KLIPPBOK E2493** Matter leak sensor. Thi
 *   **Parallel Execution**: Uses Home Assistant's `parallel` mode to ensure multiple events (leak + low battery) are handled concurrently without missing a beat.
 *   **Professional Logic**: Includes safety checks to ensure delayed actions only run if the sensor is still in the expected state.
 
+## 💡 Example Use Cases
+
+*   **🚨 Critical Alerts**: 
+    *   **Wet Immediate**: Trigger a siren and flash red lights as soon as a leak is detected under the washing machine.
+    *   **Wet Long**: If the sensor stays wet for 5 minutes, send a high-priority notification to all family members.
+*   **🔌 Automatic Shutdown**: 
+    *   **Wet Immediate**: Use a smart plug to instantly turn off the power to a dishwasher or water heater when moisture is sensed.
+*   **✅ All Clear**: 
+    *   **Dry Long**: Once the area has been dried, wait for 10 minutes to confirm it's truly clear before resetting your smart home's "Water Leak" status.
+*   **🔋 Maintenance**: 
+    *   **Battery Low**: Receive a notification when the battery level drops below 30%, giving you plenty of time to recharge or swap.
+
 ## 🛠️ Requirements
 
 *   **IKEA KLIPPBOK (E2493)** sensor connected via **Matter**.

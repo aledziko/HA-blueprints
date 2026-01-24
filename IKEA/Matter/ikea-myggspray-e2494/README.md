@@ -12,6 +12,17 @@ Full-featured automation for the **IKEA MYGGSPRAY E2494** Matter motion sensor. 
 *   **Integrated Battery Alerts**: Configurable low-battery monitoring (default 10%).
 *   **Parallel Mode**: Handles motion timers, light alerts, and battery checks concurrently.
 
+## 💡 Example Use Cases
+
+*   **🌙 Security & Comfort Lighting**: 
+    *   **Motion Detected**: Turn on the porch light, but only if the illuminance is below 10 LUX (nighttime).
+    *   **Motion Stopped**: Turn off the light after 2 minutes of inactivity.
+*   **☀️ Smart Blinds & Curtains**: 
+    *   **High Light**: Automatically close the smart blinds when the room gets too bright (e.g., above 5000 LUX) to prevent glare and overheating.
+    *   **Low Light**: Open the blinds when the sun sets and the light level drops below your comfort threshold.
+*   **🔋 Maintenance**: 
+    *   **Battery Low**: Receive a notification when the battery level drops below 30%, giving you plenty of time to recharge or swap.
+
 ## 🛠️ Requirements
 
 *   **IKEA MYGGSPRAY (E2494)** sensor connected via **Matter**.

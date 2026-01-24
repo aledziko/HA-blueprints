@@ -15,6 +15,7 @@ Click on a blueprint name to view its detailed documentation and forum post cont
 | Device | Description | Links |
 | :--- | :--- | :--- |
 | **KLIPPBOK E2493** | Leak sensor automation with integrated battery alerts and dual-stage actions. | [Documentation](IKEA/Matter/ikea-klippbok-e2493/README.md) \| [Blueprint YAML](IKEA/Matter/ikea-klippbok-e2493/ikea-klippbok-e2493-matter-leak-sensor.yaml) |
+| **TIMMERFLOTTE E2314** | Temperature & Humidity monitoring for HVAC and ventilation control. | [Documentation](IKEA/Matter/ikea-timmerflotte-e2314/README.md) \| [Blueprint YAML](IKEA/Matter/ikea-timmerflotte-e2314/ikea-timmerflotte-e2314-matter-temp-humidity-sensor.yaml) |
 | **MYGGSPRAY E2494** | Advanced motion sensor logic with LUX cutoff and sunlight-aware actions. | [Documentation](IKEA/Matter/ikea-myggspray-e2494/README.md) \| [Blueprint YAML](IKEA/Matter/ikea-myggspray-e2494/ikea-myggspray-e2494-matter-motion-sensor.yaml) |
 | **MYGGBETT E2492** | Multi-stage door/window automation for immediate and long-state events. | [Documentation](IKEA/Matter/ikea-myggbett-e2492/README.md) \| [Blueprint YAML](IKEA/Matter/ikea-myggbett-e2492/ikea-myggbett-e2492-matter-door-sensor.yaml) |
 

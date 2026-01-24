@@ -101,7 +101,7 @@ blueprint:
     battery_low_threshold:
       name: (Optional) Battery Low Level
       description: Threshold for battery alert (%).
-      default: 10
+      default: 30
       selector:
         number:
           min: 0
