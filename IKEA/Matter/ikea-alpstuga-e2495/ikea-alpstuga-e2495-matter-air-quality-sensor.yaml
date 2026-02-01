@@ -80,6 +80,15 @@ blueprint:
       default: []
       selector:
         action: {}
+    co2_helper_proxy:
+      name: "Threshold bind (CO2)"
+      description: >
+        Binds Low and High thresholds actions, which trigger once per crossing and only reset when the opposite threshold is met. 
+        Select a unique Toggle helper for each automation to avoid collisions or create a new one if needed.
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
 
     # Particulate Matter (PM2.5) Settings
     pm25_sensor:
@@ -120,6 +129,15 @@ blueprint:
       default: []
       selector:
         action: {}
+    pm25_helper_proxy:
+      name: "Threshold bind (PM2.5)"
+      description: >
+        Binds Low and High thresholds actions, which trigger once per crossing and only reset when the opposite threshold is met. 
+        Select a unique Toggle helper for each automation to avoid collisions or create a new one if needed.
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
 
     # Air Quality Index (AQI) Settings
     aqi_sensor:
@@ -179,6 +197,15 @@ blueprint:
       default: []
       selector:
         action: {}
+    aqi_helper_proxy:
+      name: "Threshold bind (AQI)"
+      description: >
+        Binds Alert and Normal states actions, which trigger once per state change and only reset when the opposite state is met. 
+        Select a unique Toggle helper for each automation to avoid collisions or create a new one if needed.
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
 
     # Temperature Settings
     temp_sensor:
@@ -217,6 +244,15 @@ blueprint:
       default: []
       selector:
         action: {}
+    temp_helper_proxy:
+      name: "Threshold bind (Temperature)"
+      description: >
+        Binds Low and High thresholds actions, which trigger once per crossing and only reset when the opposite threshold is met. 
+        Select a unique Toggle helper for each automation to avoid collisions or create a new one if needed.
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
 
     # Humidity Settings
     humidity_sensor:
@@ -257,6 +293,15 @@ blueprint:
       default: []
       selector:
         action: {}
+    humidity_helper_proxy:
+      name: "Threshold bind (Humidity)"
+      description: >
+        Binds Low and High thresholds actions, which trigger once per crossing and only reset when the opposite threshold is met. 
+        Select a unique Toggle helper for each automation to avoid collisions or create a new one if needed.
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
 
 mode: parallel
 max_exceeded: silent
@@ -274,6 +319,11 @@ trigger_variables:
   temp_low_threshold_input: !input temp_low_threshold
   humidity_high_threshold_input: !input humidity_high_threshold
   humidity_low_threshold_input: !input humidity_low_threshold
+  co2_helper_proxy_entity: !input co2_helper_proxy
+  pm25_helper_proxy_entity: !input pm25_helper_proxy
+  aqi_helper_proxy_entity: !input aqi_helper_proxy
+  temp_helper_proxy_entity: !input temp_helper_proxy
+  humidity_helper_proxy_entity: !input humidity_helper_proxy
 
 triggers:
   - trigger: numeric_state
@@ -356,7 +406,20 @@ actions:
             value_template: >-
               {{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] and
                  (trigger.from_state.state | float(0)) <= (co2_high_threshold_input | float) }}
-        sequence: !input action_co2_high
+          # Strict Mode Guard: Only run if Helper is OFF (or not defined)
+          - condition: template
+            value_template: >-
+              {{ co2_helper_proxy_entity == [] or not is_state(co2_helper_proxy_entity, 'on') }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ co2_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_on
+                    target:
+                      entity_id: !input co2_helper_proxy
+          - sequence: !input action_co2_high
       - conditions:
           - condition: trigger
             id: co2_low
@@ -364,7 +427,20 @@ actions:
             value_template: >-
               {{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] and
                  (trigger.from_state.state | float(5000)) >= (co2_low_threshold_input | float) }}
-        sequence: !input action_co2_low
+          # Strict Mode Guard: Only run if Helper is ON (or not defined)
+          - condition: template
+            value_template: >-
+              {{ co2_helper_proxy_entity == [] or is_state(co2_helper_proxy_entity, 'on') }}
+        sequence:
+          - sequence: !input action_co2_low
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ co2_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_off
+                    target:
+                      entity_id: !input co2_helper_proxy
       - conditions:
           - condition: trigger
             id: pm25_high
@@ -372,7 +448,20 @@ actions:
             value_template: >-
               {{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] and
                  (trigger.from_state.state | float(0)) <= (pm25_high_threshold_input | float) }}
-        sequence: !input action_pm25_high
+          # Strict Mode Guard: Only run if Helper is OFF (or not defined)
+          - condition: template
+            value_template: >-
+              {{ pm25_helper_proxy_entity == [] or not is_state(pm25_helper_proxy_entity, 'on') }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ pm25_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_on
+                    target:
+                      entity_id: !input pm25_helper_proxy
+          - sequence: !input action_pm25_high
       - conditions:
           - condition: trigger
             id: pm25_low
@@ -380,19 +469,58 @@ actions:
             value_template: >-
               {{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] and
                  (trigger.from_state.state | float(1000)) >= (pm25_low_threshold_input | float) }}
-        sequence: !input action_pm25_low
+          # Strict Mode Guard: Only run if Helper is ON (or not defined)
+          - condition: template
+            value_template: >-
+              {{ pm25_helper_proxy_entity == [] or is_state(pm25_helper_proxy_entity, 'on') }}
+        sequence:
+          - sequence: !input action_pm25_low
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ pm25_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_off
+                    target:
+                      entity_id: !input pm25_helper_proxy
       - conditions:
           - condition: trigger
             id: aqi_high
           - condition: template
             value_template: "{{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] }}"
-        sequence: !input action_aqi_high
+          # Strict Mode Guard: Only run if Helper is OFF (or not defined)
+          - condition: template
+            value_template: >-
+              {{ aqi_helper_proxy_entity == [] or not is_state(aqi_helper_proxy_entity, 'on') }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ aqi_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_on
+                    target:
+                      entity_id: !input aqi_helper_proxy
+          - sequence: !input action_aqi_high
       - conditions:
           - condition: trigger
             id: aqi_low
           - condition: template
             value_template: "{{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] }}"
-        sequence: !input action_aqi_low
+          # Strict Mode Guard: Only run if Helper is ON (or not defined)
+          - condition: template
+            value_template: >-
+              {{ aqi_helper_proxy_entity == [] or is_state(aqi_helper_proxy_entity, 'on') }}
+        sequence:
+          - sequence: !input action_aqi_low
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ aqi_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_off
+                    target:
+                      entity_id: !input aqi_helper_proxy
       - conditions:
           - condition: trigger
             id: temp_high
@@ -400,7 +528,20 @@ actions:
             value_template: >-
               {{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] and
                  (trigger.from_state.state | float(0)) <= (temp_high_threshold_input | float) }}
-        sequence: !input action_temp_high
+          # Strict Mode Guard: Only run if Helper is OFF (or not defined)
+          - condition: template
+            value_template: >-
+              {{ temp_helper_proxy_entity == [] or not is_state(temp_helper_proxy_entity, 'on') }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ temp_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_on
+                    target:
+                      entity_id: !input temp_helper_proxy
+          - sequence: !input action_temp_high
       - conditions:
           - condition: trigger
             id: temp_low
@@ -408,7 +549,20 @@ actions:
             value_template: >-
               {{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] and
                  (trigger.from_state.state | float(100)) >= (temp_low_threshold_input | float) }}
-        sequence: !input action_temp_low
+          # Strict Mode Guard: Only run if Helper is ON (or not defined)
+          - condition: template
+            value_template: >-
+              {{ temp_helper_proxy_entity == [] or is_state(temp_helper_proxy_entity, 'on') }}
+        sequence:
+          - sequence: !input action_temp_low
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ temp_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_off
+                    target:
+                      entity_id: !input temp_helper_proxy
       - conditions:
           - condition: trigger
             id: humidity_high
@@ -416,7 +570,20 @@ actions:
             value_template: >-
               {{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] and
                  (trigger.from_state.state | float(0)) <= (humidity_high_threshold_input | float) }}
-        sequence: !input action_humidity_high
+          # Strict Mode Guard: Only run if Helper is OFF (or not defined)
+          - condition: template
+            value_template: >-
+              {{ humidity_helper_proxy_entity == [] or not is_state(humidity_helper_proxy_entity, 'on') }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ humidity_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_on
+                    target:
+                      entity_id: !input humidity_helper_proxy
+          - sequence: !input action_humidity_high
       - conditions:
           - condition: trigger
             id: humidity_low
@@ -424,4 +591,17 @@ actions:
             value_template: >-
               {{ trigger.from_state.state not in ['unavailable', 'unknown', 'none'] and
                  (trigger.from_state.state | float(100)) >= (humidity_low_threshold_input | float) }}
-        sequence: !input action_humidity_low
+          # Strict Mode Guard: Only run if Helper is ON (or not defined)
+          - condition: template
+            value_template: >-
+              {{ humidity_helper_proxy_entity == [] or is_state(humidity_helper_proxy_entity, 'on') }}
+        sequence:
+          - sequence: !input action_humidity_low
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ humidity_helper_proxy_entity != [] }}"
+                sequence:
+                  - service: input_boolean.turn_off
+                    target:
+                      entity_id: !input humidity_helper_proxy

@@ -17,6 +17,25 @@ blueprint:
           filter:
             - device_class: moisture
               domain: binary_sensor
+    
+    use_time_window:
+      name: Enable Active Hours?
+      description: Restrict automation to a specific time window.
+      default: false
+      selector:
+        boolean: {}
+    active_start_time:
+      name: Active Start Time
+      description: Automation starts working at this time (if enabled).
+      default: "08:00:00"
+      selector:
+        time: {}
+    active_end_time:
+      name: Active End Time
+      description: Automation stops working at this time (if enabled).
+      default: "22:00:00"
+      selector:
+        time: {}
     # Wet (Leak Detected) State
     action_wet_immediate:
       name: "Action: Leak Detected (Immediate)"
@@ -98,6 +117,7 @@ trigger_variables:
   battery_threshold_input: !input battery_low_threshold
   wait_wet_long_input: !input wait_wet_long
   wait_dry_long_input: !input wait_dry_long
+  use_time_window_input: !input use_time_window
 
 triggers:
   - trigger: state
@@ -116,6 +136,15 @@ triggers:
          states(battery_entity_input) | is_number and 
          states(battery_entity_input) | float(100) < battery_threshold_input | float(-1) }}
     id: battery_low
+
+condition:
+  - condition: or
+    conditions:
+      - condition: template
+        value_template: "{{ not use_time_window_input }}"
+      - condition: time
+        after: !input active_start_time
+        before: !input active_end_time
 
 actions:
   - choose:

@@ -11,6 +11,7 @@ If the button above doesn't work, you can copy the URL below and paste it into t
 ## 🚀 Benefits
 
 *   **Multi-Stage Logic**: Trigger immediate actions (e.g., turn on light) followed by delayed actions (e.g., notify if door is left open too long).
+*   **Active Hours**: Restrict automation triggers to a specific time window (e.g., only during the day).
 *   **Parallel Execution**: Handles multiple state changes and timers concurrently.
 *   **Battery Management**: Built-in battery low monitoring with a configurable threshold (default 30%).
 *   **Highly Flexible**: All actions are optional and support multiple sub-actions.

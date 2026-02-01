@@ -13,6 +13,7 @@ If the button above doesn't work, you can copy the URL below and paste it into t
 *   **Four Environmental Triggers**: Dedicated actions for High Temp, Low Temp, High Humidity, and Low Humidity.
 *   **Custom Thresholds**: Easily set your desired numeric cutoffs for each state.
 *   **Integrated Battery Monitoring**: Get notified when the sensor battery is low without needing extra automations.
+*   **Active Hours**: Restrict automation triggers to a specific time window (e.g., only during the day).
 *   **Parallel Execution**: Handles multiple environmental shifts concurrently.
 
 ## 💡 Example Use Cases
@@ -32,9 +33,23 @@ If the button above doesn't work, you can copy the URL below and paste it into t
 *   **IKEA TIMMERFLOTTE** sensor connected via **Matter**.
 *   Entities for **Temperature**, **Humidity**, and (optionally) **Battery**.
 
-## 📄 License
-
 Licensed under the **MIT License**.
+
+## 🛡️ Threshold Bind (Strict Cycle)
+
+By default, Home Assistant automations are "stateless"—they don't easily remember what happened five minutes ago. If your temperature fluctuates between 25.9°C and 26.1°C, you might get 10 notifications in a row.
+
+**Threshold Bind** solves this by adding "Memory" to your automation. It ensures that once a "High" alert triggers, it is **locked**. It will not fire again until the sensor has safely returned to the "Low" (Safe) threshold first.
+
+### How to Enable:
+1.  **Create a Helper**: Inside the blueprint settings, find the **Threshold bind** input for your sensor (e.g., Temperature).
+2.  **Toggle Button**: Click the dropdown and select **"Create new Toggle helper"**. 
+3.  **Name it**: Give it a clear name like `Living Room Temp Bind`.
+4.  **Save**: Once selected, the automation will now use this helper to "latch" the state and prevent notification storms.
+
+> [!IMPORTANT]
+> **Unique per Automation**: If you have two different automations (e.g., one for the Living Room and one for the Greenhouse), you **MUST** create a unique helper for each. If they share the same helper, one room's temperature will "lock" the other room's alerts!
+
 
 ---
 ### ⚠️ Troubleshooting

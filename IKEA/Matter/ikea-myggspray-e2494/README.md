@@ -14,6 +14,7 @@ If the button above doesn't work, you can copy the URL below and paste it into t
 *   **Illuminance Cutoff**: Only trigger the "Motion Detected" action if the light level is below your chosen LUX threshold.
 *   **Sunlight-Aware Actions**: Dedicated "High" and "Low" light thresholds to trigger actions when it gets too bright or too dark (e.g., closing/opening curtains).
 *   **Integrated Battery Alerts**: Configurable low-battery monitoring (default 10%).
+*   **Active Hours**: Restrict automation triggers to a specific time window (e.g., only during the night).
 *   **Parallel Mode**: Handles motion timers, light alerts, and battery checks concurrently.
 
 ## 💡 Example Use Cases

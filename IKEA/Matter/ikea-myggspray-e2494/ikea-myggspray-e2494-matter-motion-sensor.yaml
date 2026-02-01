@@ -18,6 +18,25 @@ blueprint:
               domain: binary_sensor
             - device_class: motion
               domain: binary_sensor
+    
+    use_time_window:
+      name: Enable Active Hours?
+      description: Restrict automation to a specific time window.
+      default: false
+      selector:
+        boolean: {}
+    active_start_time:
+      name: Active Start Time
+      description: Automation starts working at this time (if enabled).
+      default: "08:00:00"
+      selector:
+        time: {}
+    active_end_time:
+      name: Active End Time
+      description: Automation stops working at this time (if enabled).
+      default: "22:00:00"
+      selector:
+        time: {}
     no_motion_wait:
       name: Wait time (Motion)
       description: Time to wait after last motion is detected before running the "off" action.
@@ -128,6 +147,7 @@ trigger_variables:
   low_threshold_input: !input illuminance_low_threshold
   battery_entity_input: !input battery_entity
   battery_threshold_input: !input battery_low_threshold
+  use_time_window_input: !input use_time_window
 
 triggers:
   - trigger: state
@@ -154,6 +174,15 @@ triggers:
          states(battery_entity_input) | is_number and 
          states(battery_entity_input) | float(100) < battery_threshold_input | float(-1) }}
     id: battery_low
+
+condition:
+  - condition: or
+    conditions:
+      - condition: template
+        value_template: "{{ not use_time_window_input }}"
+      - condition: time
+        after: !input active_start_time
+        before: !input active_end_time
 
 actions:
   - choose:

@@ -59,6 +59,21 @@ If you are receiving too many notifications in a short time, it's usually caused
 
 Licensed under the **MIT License**.
 
+## 🛡️ Threshold Bind (Strict Cycle)
+
+By default, Home Assistant automations are "stateless"—they don't easily remember what happened five minutes ago. If your humidity sensor fluctuates between 59.9% and 60.1%, you might get 10 notifications in a row.
+
+**Threshold Bind** solves this by adding "Memory" to your automation. It ensures that once a "High" alert triggers, it is **locked**. It will not fire again until the sensor has safely returned to the "Low" (Safe) threshold first.
+
+### How to Enable:
+1.  **Create a Helper**: Inside the blueprint settings, find the **Threshold bind** input for your sensor (e.g., Humidity).
+2.  **Toggle Button**: Click the dropdown and select **"Create new Toggle helper"**. 
+3.  **Name it**: Give it a clear name like `Kitchen Humidity Bind`.
+4.  **Save**: Once selected, the automation will now use this helper to "latch" the state and prevent notification storms.
+
+> [!IMPORTANT]
+> **Unique per Automation**: If you have two different automations (e.g., one for the Bedroom and one for the Office), you **MUST** create a unique helper for each. If they share the same helper, one room's humidity will "lock" the other room's alerts!
+
 ---
 ### ⚠️ Troubleshooting
 **Preventing Repeated Actions?**

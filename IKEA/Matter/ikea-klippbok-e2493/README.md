@@ -13,6 +13,7 @@ If the button above doesn't work, you can copy the URL below and paste it into t
 *   **Dual-Stage Wet Actions**: Trigger something immediately (like a siren) and something else if it stays wet for a while (like a push notification).
 *   **Dual-Stage Dry Actions**: Trigger actions as soon as it's dry, and optionally wait to confirm it stays dry.
 *   **Integrated Battery Monitoring**: No need for separate battery automations. Get notified directly when the battery drops below your chosen threshold.
+*   **Active Hours**: Restrict automation triggers to a specific time window (e.g., only during the day).
 *   **Parallel Execution**: Uses Home Assistant's `parallel` mode to ensure multiple events (leak + low battery) are handled concurrently without missing a beat.
 *   **Professional Logic**: Includes safety checks to ensure delayed actions only run if the sensor is still in the expected state.
 
