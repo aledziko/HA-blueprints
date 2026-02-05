@@ -154,7 +154,14 @@ triggers:
     entity_id: !input motion_entity
     from: "off"
     to: "on"
-    id: motion_detected
+    id: motion_on
+  - trigger: state
+    entity_id: !input motion_entity
+    from: "on"
+    to: "off"
+    for:
+      seconds: !input no_motion_wait
+    id: motion_off
   # Template triggers for optional entities
   - trigger: template
     value_template: >
@@ -186,10 +193,10 @@ condition:
 
 actions:
   - choose:
-      # MOTION DETECTED
+      # MOTION ON
       - conditions:
           - condition: trigger
-            id: motion_detected
+            id: motion_on
           - condition: or
             conditions:
               - condition: template
@@ -198,20 +205,13 @@ actions:
                 value_template: "{{ motion_cutoff_input == 0 }}"
               - condition: template
                 value_template: "{{ states(illuminance_entity_input) | float(99999) <= (motion_cutoff_input | float) }}"
-        sequence:
-          - choose: []
-            default: !input motion_on_action
-          - wait_for_trigger:
-              - trigger: state
-                entity_id: !input motion_entity
-                from: "on"
-                to: "off"
-          - delay: !input no_motion_wait
-          # Safety check: Only turn off if the sensor is STILL currently 'off'
-          - condition: template
-            value_template: "{{ is_state(motion_entity_input, 'off') }}"
-          - choose: []
-            default: !input motion_off_action
+        sequence: !input motion_on_action
+
+      # MOTION OFF
+      - conditions:
+          - condition: trigger
+            id: motion_off
+        sequence: !input motion_off_action
 
       # LIGHT HIGH
       - conditions:

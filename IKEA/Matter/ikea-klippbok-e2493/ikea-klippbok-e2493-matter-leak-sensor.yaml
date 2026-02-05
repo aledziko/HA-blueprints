@@ -124,12 +124,26 @@ triggers:
     entity_id: !input moisture_sensor
     from: "off"
     to: "on"
-    id: leak_detected
+    id: leak_detected_immediate
+  - trigger: state
+    entity_id: !input moisture_sensor
+    from: "off"
+    to: "on"
+    for:
+      seconds: !input wait_wet_long
+    id: leak_detected_long
   - trigger: state
     entity_id: !input moisture_sensor
     from: "on"
     to: "off"
-    id: leak_cleared
+    id: leak_cleared_immediate
+  - trigger: state
+    entity_id: !input moisture_sensor
+    from: "on"
+    to: "off"
+    for:
+      seconds: !input wait_dry_long
+    id: leak_cleared_long
   - trigger: template
     value_template: >
       {{ battery_entity_input != none and 
@@ -148,37 +162,33 @@ condition:
 
 actions:
   - choose:
-      # LEAK DETECTED
+      # LEAK DETECTED (IMMEDIATE)
       - conditions:
           - condition: trigger
-            id: leak_detected
-        sequence:
-          - choose: []
-            default: !input action_wet_immediate
+            id: leak_detected_immediate
+        sequence: !input action_wet_immediate
+
+      # LEAK DETECTED (LONG)
+      - conditions:
+          - condition: trigger
+            id: leak_detected_long
           - condition: template
             value_template: "{{ wait_wet_long_input | int > 0 }}"
-          - delay: !input wait_wet_long
-          # Safety check: Only run if the sensor is STILL wet
-          - condition: template
-            value_template: "{{ is_state(moisture_sensor_input, 'on') }}"
-          - choose: []
-            default: !input action_wet_long
+        sequence: !input action_wet_long
 
-      # LEAK CLEARED
+      # LEAK CLEARED (IMMEDIATE)
       - conditions:
           - condition: trigger
-            id: leak_cleared
-        sequence:
-          - choose: []
-            default: !input action_dry_immediate
+            id: leak_cleared_immediate
+        sequence: !input action_dry_immediate
+
+      # LEAK CLEARED (LONG)
+      - conditions:
+          - condition: trigger
+            id: leak_cleared_long
           - condition: template
             value_template: "{{ wait_dry_long_input | int > 0 }}"
-          - delay: !input wait_dry_long
-          # Safety check: Only run if the sensor is STILL dry
-          - condition: template
-            value_template: "{{ is_state(moisture_sensor_input, 'off') }}"
-          - choose: []
-            default: !input action_dry_long
+        sequence: !input action_dry_long
 
       # BATTERY LOW
       - conditions:

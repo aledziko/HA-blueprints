@@ -127,12 +127,26 @@ triggers:
     entity_id: !input door_entity
     from: "off"
     to: "on"
-    id: door_opened
+    id: door_opened_immediate
+  - trigger: state
+    entity_id: !input door_entity
+    from: "off"
+    to: "on"
+    for:
+      seconds: !input wait_opened_long
+    id: door_opened_long
   - trigger: state
     entity_id: !input door_entity
     from: "on"
     to: "off"
-    id: door_closed
+    id: door_closed_immediate
+  - trigger: state
+    entity_id: !input door_entity
+    from: "on"
+    to: "off"
+    for:
+      seconds: !input wait_closed_long
+    id: door_closed_long
   - trigger: template
     value_template: >
       {{ battery_entity_input != none and 
@@ -151,37 +165,33 @@ condition:
 
 actions:
   - choose:
-      # DOOR OPENED
+      # DOOR OPENED (IMMEDIATE)
       - conditions:
           - condition: trigger
-            id: door_opened
-        sequence:
-          - choose: []
-            default: !input action_opened_immediate
+            id: door_opened_immediate
+        sequence: !input action_opened_immediate
+
+      # DOOR OPENED (LONG)
+      - conditions:
+          - condition: trigger
+            id: door_opened_long
           - condition: template
             value_template: "{{ wait_opened_long_input | int > 0 }}"
-          - delay: !input wait_opened_long
-          # Safety check: Only run if the door is STILL open
-          - condition: template
-            value_template: "{{ is_state(door_entity_input, 'on') }}"
-          - choose: []
-            default: !input action_opened_long
+        sequence: !input action_opened_long
 
-      # DOOR CLOSED
+      # DOOR CLOSED (IMMEDIATE)
       - conditions:
           - condition: trigger
-            id: door_closed
-        sequence:
-          - choose: []
-            default: !input action_closed_immediate
+            id: door_closed_immediate
+        sequence: !input action_closed_immediate
+
+      # DOOR CLOSED (LONG)
+      - conditions:
+          - condition: trigger
+            id: door_closed_long
           - condition: template
             value_template: "{{ wait_closed_long_input | int > 0 }}"
-          - delay: !input wait_closed_long
-          # Safety check: Only run if the door is STILL closed
-          - condition: template
-            value_template: "{{ is_state(door_entity_input, 'off') }}"
-          - choose: []
-            default: !input action_closed_long
+        sequence: !input action_closed_long
 
       # BATTERY LOW
       - conditions:
