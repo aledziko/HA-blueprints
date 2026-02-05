@@ -1,5 +1,5 @@
 blueprint:
-  name: IKEA MYGGBETT E2492 Door/Window Sensor (Matter) v1.0
+  name: IKEA MYGGBETT E2492 Door/Window Sensor (Matter) v2.0
   description: 'Full-featured automation for the IKEA MYGGBETT E2492 Matter door/window sensor. 
     Supports immediate and delayed actions for both opened and closed states, plus battery alerts.
     '

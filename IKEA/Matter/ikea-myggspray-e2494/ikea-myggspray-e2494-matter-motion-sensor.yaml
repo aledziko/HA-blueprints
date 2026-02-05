@@ -1,5 +1,5 @@
 blueprint:
-  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter) v2.0
+  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter) v2.1
   description: 'Full-featured automation for the IKEA MYGGSPRAY E2494 Matter motion sensor. 
     Supports independent actions for motion, illuminance (high/low), and battery alerts.
     '
@@ -197,15 +197,20 @@ actions:
       - conditions:
           - condition: trigger
             id: motion_on
-          - condition: or
-            conditions:
-              - condition: template
-                value_template: "{{ illuminance_entity_input == none or states(illuminance_entity_input) in ['unknown', 'unavailable', 'none'] }}"
-              - condition: template
-                value_template: "{{ motion_cutoff_input == 0 }}"
-              - condition: template
-                value_template: "{{ states(illuminance_entity_input) | float(99999) <= (motion_cutoff_input | float) }}"
-        sequence: !input motion_on_action
+        sequence:
+          # Optional: Safety delay to allow battery-powered lux sensors to report 
+          # their fresh value alongside the motion event.
+          - delay: 1.5
+          - condition: template
+            value_template: >
+              {% set cutoff = motion_cutoff_input | float(0) %}
+              {% if cutoff == 0 %}
+                true
+              {% else %}
+                {% set lux = states(illuminance_entity_input) | float(-1) %}
+                {{ lux == -1 or lux <= cutoff }}
+              {% endif %}
+          - sequence: !input motion_on_action
 
       # MOTION OFF
       - conditions:

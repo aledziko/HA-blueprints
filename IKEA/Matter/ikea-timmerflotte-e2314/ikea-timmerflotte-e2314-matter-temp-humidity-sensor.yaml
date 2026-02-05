@@ -1,5 +1,5 @@
 blueprint:
-  name: IKEA TIMMERFLOTTE E2314 Temp/Humidity Sensor (Matter) v1.0
+  name: IKEA TIMMERFLOTTE E2314 Temp/Humidity Sensor (Matter) v2.0
   description: 'Pro-grade automation for the IKEA TIMMERFLOTTE Matter temperature and humidity sensor. 
     Allows triggering actions (HVAC, ventilation, notifications) based on high/low temperature and humidity thresholds, 
     plus integrated battery monitoring.

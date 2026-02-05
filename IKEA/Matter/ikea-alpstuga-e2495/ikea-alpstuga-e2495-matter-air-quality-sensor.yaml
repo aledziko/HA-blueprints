@@ -1,5 +1,5 @@
 blueprint:
-  name: IKEA ALPSTUGA E2495 Air Quality Sensor (Matter) v1.0
+  name: IKEA ALPSTUGA E2495 Air Quality Sensor (Matter) v2.0
   description: 'Pro-grade automation for the IKEA ALPSTUGA E2495 Matter Air Quality sensor. 
     Allows triggering actions (Air Purifiers, Ventilation, HVAC) based on thresholds for 
     CO2, PM2.5, Air Quality Index (summary state), Temperature, and Humidity.

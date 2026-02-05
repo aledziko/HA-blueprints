@@ -1,5 +1,5 @@
 blueprint:
-  name: IKEA KLIPPBOK E2493 Leak Sensor (Matter) v1.0
+  name: IKEA KLIPPBOK E2493 Leak Sensor (Matter) v2.0
   description: 'Full-featured automation for the IKEA KLIPPBOK E2493 Matter leak sensor. 
     Supports immediate and delayed actions for both wet (leak) and dry (clear) states, plus battery alerts.
     Inspired by the community blueprint by [censay](https://community.home-assistant.io/t/ikea-klippbok-matter-over-thread-leak-detector-e2493/968818).

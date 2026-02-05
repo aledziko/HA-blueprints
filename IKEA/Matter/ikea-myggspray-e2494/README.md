@@ -39,6 +39,14 @@ If the button above doesn't work, you can copy the URL below and paste it into t
 Licensed under the **MIT License**.
 
 ---
+## ⚠️ Troubleshooting
+
+### 💡 Lux Sensor "Ignoring" Threshold?
+If your lights turn on during the day even with a low cutoff, check the following:
+*   **Stale Data**: IKEA Matter sensors are battery-powered and report motion *before* they report the light level (measured at ~1s lag). I've added a **1.5s delay** in v2.1 to ensure we catch the fresh value.
+*   **Sensor Stuck**: Many IKEA sensors (E2494) have a hardware limitation where the lux reading can get "stuck" at a fixed value (often 1.0 lx) for long periods. If your Home Assistant entity shows 1.0 lx during the day, the blueprint will fire because it thinks it's dark!
+*   **Re-Wake**: Try removing and re-inserting the battery to "wake" a stuck lux sensor, or check for firmware updates via the IKEA Home Smart app.
+
 ### 🔗 More Blueprints & Community
 Check out my other blueprints for IKEA Matter devices on the Home Assistant Community:
 
