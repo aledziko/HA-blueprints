@@ -18,7 +18,8 @@ blueprint:
               domain: binary_sensor
             - device_class: motion
               domain: binary_sensor
-    
+            - device_class: presence
+              domain: binary_sensor                     
     use_time_window:
       name: Enable Active Hours?
       description: Restrict automation to a specific time window.
