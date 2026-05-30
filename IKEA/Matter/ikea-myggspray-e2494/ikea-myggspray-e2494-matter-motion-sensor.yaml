@@ -1,5 +1,5 @@
 blueprint:
-  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter) v2.1
+  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter) v2.2
   description: 'Full-featured automation for the IKEA MYGGSPRAY E2494 Matter motion sensor. 
     Supports independent actions for motion, illuminance (high/low), and battery alerts.
     '
