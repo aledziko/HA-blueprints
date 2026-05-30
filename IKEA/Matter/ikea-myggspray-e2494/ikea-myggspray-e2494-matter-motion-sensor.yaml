@@ -9,8 +9,8 @@ blueprint:
   input:
     # Motion Settings
     motion_entity:
-      name: MYGGSPRAY Motion Sensor
-      description: Select the MYGGSPRAY motion sensor (binary_sensor).
+      name: Motion Sensor
+      description: Select the motion sensor (binary_sensor).
       selector:
         entity:
           filter:
@@ -59,6 +59,16 @@ blueprint:
       default: []
       selector:
         action: {}
+    safety_delay:
+      name: (Optional) Safety Delay
+      description: Delay in seconds to wait for battery-powered light sensors to report their fresh value. Set to 0 for instant triggering (e.g. wired alarm sensors).
+      default: 1.5
+      selector:
+        number:
+          min: 0.0
+          max: 10.0
+          step: 0.1
+          unit_of_measurement: seconds
 
     # Illuminance Settings
     illuminance_entity:
@@ -149,6 +159,7 @@ trigger_variables:
   battery_entity_input: !input battery_entity
   battery_threshold_input: !input battery_low_threshold
   use_time_window_input: !input use_time_window
+  safety_delay_input: !input safety_delay
 
 triggers:
   - trigger: state
@@ -201,7 +212,14 @@ actions:
         sequence:
           # Optional: Safety delay to allow battery-powered lux sensors to report 
           # their fresh value alongside the motion event.
-          - delay: 1.5
+          - delay:
+              seconds: >-
+                {% set cutoff = motion_cutoff_input | float(0) %}
+                {% if cutoff == 0 or illuminance_entity_input == none or illuminance_entity_input == [] or illuminance_entity_input == '' %}
+                  0
+                {% else %}
+                  {{ safety_delay_input | float(1.5) }}
+                {% endif %}
           - condition: template
             value_template: >
               {% set cutoff = motion_cutoff_input | float(0) %}
