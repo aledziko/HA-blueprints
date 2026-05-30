@@ -81,22 +81,22 @@ blueprint:
             domain: sensor
             device_class: illuminance
     motion_cutoff:
-      name: (Optional) Motion Light Cutoff
+      name: "(Optional) Motion Light Cutoff"
       description: Only trigger "Motion Detected" action if LUX is BELOW this value (0 to disable).
       default: 0
       selector:
         number:
           min: 0
-          max: 3000
+          max: 150000
           unit_of_measurement: lux
     illuminance_high_threshold:
-      name: (Optional) Light High Threshold
-      description: Trigger "High Action" when LUX goes ABOVE this value (e.g. 500 lx).
-      default: 500
+      name: "(Optional) Light High Threshold"
+      description: Trigger "High Action" when LUX goes ABOVE this value (0 to disable).
+      default: 0
       selector:
         number:
           min: 0
-          max: 3000
+          max: 150000
           unit_of_measurement: lux
     high_action:
       name: "Action: Light High"
@@ -105,13 +105,13 @@ blueprint:
       selector:
         action: {}
     illuminance_low_threshold:
-      name: (Optional) Light Low Threshold
-      description: Trigger "Low Action" when LUX goes BELOW this value (e.g. 5 lx).
-      default: 5
+      name: "(Optional) Light Low Threshold"
+      description: Trigger "Low Action" when LUX goes BELOW this value (0 to disable).
+      default: 0
       selector:
         number:
           min: 0
-          max: 3000
+          max: 150000
           unit_of_measurement: lux
     low_action:
       name: "Action: Light Low"
@@ -177,13 +177,15 @@ triggers:
   # Template triggers for optional entities
   - trigger: template
     value_template: >
-      {{ illuminance_entity_input != none and illuminance_entity_input != [] and illuminance_entity_input != '' and 
+      {{ high_threshold_input | float(0) > 0 and 
+         illuminance_entity_input != none and illuminance_entity_input != [] and illuminance_entity_input != '' and 
          states(illuminance_entity_input) | is_number and 
          states(illuminance_entity_input) | float(0) > high_threshold_input | float(100000) }}
     id: light_high
   - trigger: template
     value_template: >
-      {{ illuminance_entity_input != none and illuminance_entity_input != [] and illuminance_entity_input != '' and 
+      {{ low_threshold_input | float(0) > 0 and 
+         illuminance_entity_input != none and illuminance_entity_input != [] and illuminance_entity_input != '' and 
          states(illuminance_entity_input) | is_number and 
          states(illuminance_entity_input) | float(100000) < low_threshold_input | float(-1) }}
     id: light_low
