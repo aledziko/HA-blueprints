@@ -20,6 +20,11 @@ Click on a blueprint name to view its detailed documentation and forum post cont
 | **MYGGSPRAY E2494** | Advanced motion sensor logic with LUX cutoff and sunlight-aware actions. | [Documentation](IKEA/Matter/ikea-myggspray-e2494/README.md) \| [Blueprint YAML](IKEA/Matter/ikea-myggspray-e2494/ikea-myggspray-e2494-matter-motion-sensor.yaml) |
 | **MYGGBETT E2492** | Multi-stage door/window automation for immediate and long-state events. | [Documentation](IKEA/Matter/ikea-myggbett-e2492/README.md) \| [Blueprint YAML](IKEA/Matter/ikea-myggbett-e2492/ikea-myggbett-e2492-matter-door-sensor.yaml) |
 
+### ESPHome
+| Project | Description | Links |
+| :--- | :--- | :--- |
+| **Smart Sprinkler Controller** | Multi-zone smart irrigation with hardware-level queuing, soil moisture, and weather forecast integration. | [Documentation](ESPHome/Sprinklers/README.md) \| [Blueprint YAML](ESPHome/Sprinklers/ha-blueprint-sprinklers.yaml) |
+
 ---
 
 ## 🛠️ How to Import

@@ -1,0 +1,305 @@
+blueprint:
+  name: "ESPHome Sprinkler Controller (Weather & Forecast)"
+  description: "Smart zoning irrigation using soil moisture sensors, current precipitation, and weather forecasts."
+  domain: automation
+  input:
+    schedule_time:
+      name: Schedule Time
+      description: At what time every day to check conditions and start sprinklers?
+      default: "04:00:00"
+      selector:
+        time:
+    season_start:
+      name: Season Start Date (MM-DD)
+      description: The date when the irrigation season begins (e.g., "05-01" for May 1st)
+      default: "05-01"
+      selector:
+        text:
+    season_end:
+      name: Season End Date (MM-DD)
+      description: The date when the irrigation season ends (inclusive, e.g., "10-31" for Oct 31st)
+      default: "10-31"
+      selector:
+        text:
+    main_controller_switch:
+      name: ESPHome Main Controller Switch
+      description: The switch entity (e.g., switch.sprinklers_main) used to reset the queue before starting.
+      selector:
+        entity:
+          domain: switch
+    duration_number:
+      name: Duration Number
+      description: The ESPHome number entity (e.g., number.sprinklers_duration_minutes).
+      selector:
+        entity:
+          domain: number
+    run_duration:
+      name: Run Duration (minutes)
+      description: How long to water each selected zone.
+      default: 15
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: min
+          mode: slider
+    target_valves:
+      name: Target Zones (Valves/Lines)
+      description: Select the switch entities corresponding to individual valves to run in this cycle.
+      selector:
+        entity:
+          domain: switch
+          multiple: true
+    soil_moisture_sensor:
+      name: Soil Moisture Sensor (Optional)
+      description: Sensor entity reporting moisture in %. Leave empty to skip.
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+          device_class: moisture
+          multiple: false
+    soil_moisture_threshold:
+      name: Soil Moisture Threshold (%)
+      description: If moisture exceeds this value, irrigation will be skipped.
+      default: 40
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: '%'
+          mode: slider
+    rain_sensor:
+      name: Today's Rain Sensor (Optional)
+      description: Sensor entity reporting today's accumulated rain in mm (e.g., EcoWitt). Leave empty to skip.
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+          multiple: false
+    rain_threshold:
+      name: Today's Rain Threshold (mm)
+      description: If today's accumulated rain exceeds this value, irrigation will be skipped.
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 50
+          unit_of_measurement: 'mm'
+          mode: slider
+    weather_entity:
+      name: Weather Forecast Entity (Optional)
+      description: Used to check forecasted precipitation for today. Leave empty to skip.
+      default: ""
+      selector:
+        entity:
+          domain: weather
+          multiple: false
+    forecast_threshold:
+      name: Forecasted Rain Threshold (mm)
+      description: If today's forecasted precipitation is greater than this value, irrigation will be skipped.
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 50
+          unit_of_measurement: 'mm'
+          mode: slider
+    schedule_mode:
+      name: Schedule Mode
+      description: "Choose how to determine the irrigation days."
+      default: weekdays
+      selector:
+        select:
+          options:
+            - label: Specific Weekdays
+              value: weekdays
+            - label: Every N Days (Interval)
+              value: interval
+    weekday:
+      name: Weekdays (if Mode is Specific Weekdays)
+      description: On which days should the irrigation run?
+      default:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+        - sat
+        - sun
+      selector:
+        select:
+          multiple: true
+          options:
+            - label: Monday
+              value: mon
+            - label: Tuesday
+              value: tue
+            - label: Wednesday
+              value: wed
+            - label: Thursday
+              value: thu
+            - label: Friday
+              value: fri
+            - label: Saturday
+              value: sat
+            - label: Sunday
+              value: sun
+    interval:
+      name: Day Interval (if Mode is Every N Days)
+      description: "Run every N days. Set to 2 for every other day, 3 for every 3rd day, etc."
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 30
+          unit_of_measurement: 'days'
+          mode: slider
+    skip_next_run:
+      name: Skip Next Run (Optional)
+      description: An optional input_boolean. If 'on', this automation will skip the next run.
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+          multiple: false
+    pre_actions:
+      name: Pre-Irrigation Actions (Optional)
+      description: Custom actions to run before starting the irrigation (e.g., send a notification, speak an announcement, or turn on a light).
+      default: []
+      selector:
+        action:
+
+trigger:
+  - platform: time
+    at: !input schedule_time
+
+variables:
+  start_date: !input season_start
+  end_date: !input season_end
+  current_date: "{{ now().strftime('%m-%d') }}"
+  soil_sensor: !input soil_moisture_sensor
+  soil_threshold: !input soil_moisture_threshold
+  rain_sens: !input rain_sensor
+  rain_thresh: !input rain_threshold
+  weather_ent: !input weather_entity
+  forecast_thresh: !input forecast_threshold
+  sched_mode: !input schedule_mode
+  selected_days: !input weekday
+  day_interval: !input interval
+  skip_switch: !input skip_next_run
+  duration: !input run_duration
+
+action:
+  # 1. Check if we are in season and it's the right day
+  - condition: template
+    value_template: >
+      {# Check Season #}
+      {% set in_season = false %}
+      {% if start_date <= end_date %}
+        {% set in_season = current_date >= start_date and current_date <= end_date %}
+      {% else %}
+        {% set in_season = current_date >= start_date or current_date <= end_date %}
+      {% endif %}
+      
+      {# Check Day Logic based on Mode #}
+      {% set day_ok = false %}
+      {% if sched_mode == 'weekdays' %}
+        {% set day_name = now().strftime('%a') | lower %}
+        {% set day_ok = day_name in selected_days %}
+      {% else %}
+        {% set day_ok = (now().toordinal() % day_interval) == 0 %}
+      {% endif %}
+      
+      {{ in_season and day_ok }}
+
+  # 2. Check and reset Skip Switch if it was ON (Rain Delay / Skip Next Run)
+  - if:
+      - condition: template
+        value_template: "{{ skip_switch != '' and is_state(skip_switch, 'on') }}"
+    then:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: "{{ skip_switch }}"
+      - stop: "Skipping this run as requested by the Skip Next Run toggle."
+
+  # 3. Fetch weather forecast (HA 2024.4+ format support)
+  - if:
+      - condition: template
+        value_template: "{{ weather_ent != '' }}"
+    then:
+      - service: weather.get_forecasts
+        target:
+          entity_id: "{{ weather_ent }}"
+        data:
+          type: daily
+        response_variable: weather_forecast
+
+  # 4. Check all weather conditions (Soil, Rain, Forecast)
+  - condition: template
+    value_template: >
+      {# Check soil moisture #}
+      {% set soil_ok = true %}
+      {% if soil_sensor != '' and states(soil_sensor) not in ['unknown', 'unavailable'] %}
+        {% set soil_ok = states(soil_sensor) | float(0) < soil_threshold %}
+      {% endif %}
+      
+      {# Check today's physical precipitation #}
+      {% set rain_ok = true %}
+      {% if rain_sens != '' and states(rain_sens) not in ['unknown', 'unavailable'] %}
+        {% set rain_ok = states(rain_sens) | float(0) < rain_thresh %}
+      {% endif %}
+      
+      {# Check today's forecasted precipitation #}
+      {% set forecast_ok = true %}
+      {% if weather_ent != '' and weather_forecast is defined and weather_ent in weather_forecast %}
+        {% set forecasts = weather_forecast[weather_ent].forecast %}
+        {% if forecasts | length > 0 %}
+          {% set today_forecast = forecasts[0] %}
+          {% if 'precipitation' in today_forecast and today_forecast.precipitation != none %}
+            {% set forecast_ok = today_forecast.precipitation | float(0) < forecast_thresh %}
+          {% endif %}
+        {% endif %}
+      {% endif %}
+      
+      {{ soil_ok and rain_ok and forecast_ok }}
+
+  # 5. Run Custom Pre-Irrigation Actions (Optional)
+  - choose: []
+    default: !input pre_actions
+
+  # 6. If all conditions are met, proceed with irrigation:
+  # Clear the queue first to make sure there are no leftovers
+  - service: esphome.sprinklers_clear_queued_valves
+  - delay: "00:00:01"
+  
+  # Set the duration multiplier in ESPHome (scaled so 1.0 = 10 minutes, meaning HA minutes * 0.1)
+  - service: number.set_value
+    target:
+      entity_id: !input duration_number
+    data:
+      value: "{{ (duration | float) * 0.1 }}"
+  - delay: "00:00:01"
+  
+  # Queue each selected zone sequentially on ESPHome
+  - repeat:
+      for_each: !input target_valves
+      sequence:
+        - service: esphome.sprinklers_queue_valve
+          data:
+            valve_num: >-
+              {% set entity = repeat.item %}
+              {% if 'lawn_front' in entity %} 0
+              {% elif 'lawn_side_lane' in entity %} 1
+              {% elif 'lawn_backyard_south' in entity %} 2
+              {% elif 'lawn_backyard_west' in entity %} 3
+              {% elif 'lawn_back_north' in entity %} 4
+              {% elif 'dripline_front' in entity %} 5
+              {% elif 'dripline_trees' in entity %} 6
+              {% elif 'dripline_berries' in entity %} 7
+              {% else %} 0
+              {% endif %}
+        - delay: "00:00:01"
+  
+  # Start the queued sequence on ESPHome (ESPHome handles all timing, safety delays, and sequence completely locally!)
+  - service: esphome.sprinklers_start_from_queue

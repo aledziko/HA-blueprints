@@ -1,0 +1,262 @@
+esphome:
+  name: sprinklers
+  friendly_name: Sprinklers Controller
+
+# ==============================================================================
+# DEVICE CONFIGURATION
+# ==============================================================================
+# Default board is WT32-ETH01 (ESP32 with Ethernet). 
+# This project is highly portable. If you are not using a WT32-ETH01:
+# 1. Update the 'board' and platform settings to match any other ESPHome compatible board.
+# 2. Remove the `ethernet:` block and add a standard `wifi:` configuration if needed.
+# 3. Update the `pin:` numbers in the `switch:` section to match the available GPIOs on your device.
+esp32:
+  board: wt32-eth01
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Web Server for local control
+web_server:
+  port: 80
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret sprinklers_api_key
+  on_client_disconnected:
+    - sprinkler.shutdown: sprinkler_controller
+  services:
+    - service: clear_queued_valves
+      then:
+        - sprinkler.clear_queued_valves: sprinkler_controller
+    - service: queue_valve
+      variables:
+        valve_num: float
+      then:
+        - sprinkler.queue_valve:
+            id: sprinkler_controller
+            valve_number: !lambda "return (int)valve_num;"
+    - service: start_from_queue
+      then:
+        - sprinkler.start_from_queue: sprinkler_controller
+
+ota:
+  - platform: esphome
+    password: !secret sprinklers_ota_password
+
+button:
+  - platform: restart
+    name: "Restart Sprinklers Controller"
+
+# --- CONNECTIVITY ---
+# WT32-ETH01 uses wired Ethernet. 
+# If you want to use WiFi instead, comment out the 'ethernet' block 
+# and uncomment the 'wifi' block below.
+# wifi:
+#   ssid: "[YOUR_WIFI_SSID]"
+#   password: "[YOUR_WIFI_PASSWORD]"
+
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk:
+    pin: GPIO0
+    mode: CLK_EXT_IN
+  phy_addr: 1
+  power_pin: GPIO16
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Warsaw
+    on_time:
+      # Emergency shutdown of sprinklers every day at 6:00 AM
+      - seconds: 0
+        minutes: 0
+        hours: 6
+        then:
+          - sprinkler.shutdown: sprinkler_controller
+
+text_sensor:
+  - platform: template
+    name: "Active Sprinkler Valve"
+    id: active_valve_name
+    update_interval: 5s
+    icon: mdi:sprinkler
+    lambda: |-
+      if (id(sprinkler_controller).active_valve().has_value()) {
+        uint8_t valve = id(sprinkler_controller).active_valve().value();
+        std::string name = "Unknown";
+        switch (valve) {
+          case 0: name = "Lawn Front"; break;
+          case 1: name = "Lawn Side Lane"; break;
+          case 2: name = "Lawn Backyard South"; break;
+          case 3: name = "Lawn Backyard West"; break;
+          case 4: name = "Lawn Back North"; break;
+          case 5: name = "Dripline Front"; break;
+          case 6: name = "Dripline Trees"; break;
+          case 7: name = "Dripline Berries"; break;
+        }
+        
+        auto time_left = id(sprinkler_controller).time_remaining_active_valve().value_or(0);
+        int minutes = time_left / 60;
+        int seconds = time_left % 60;
+        
+        char buffer[32];
+        sprintf(buffer, " (%02d:%02d left)", minutes, seconds);
+        return name + buffer;
+      } else {
+        return {"Idle"};
+      }
+
+sprinkler:
+  # Keep one main controller for safety (shared water line)
+  - id: sprinkler_controller
+    main_switch: "Sprinklers Main"
+    auto_advance_switch: "Sprinklers Auto Advance"
+    multiplier_number: "Sprinklers Duration (minutes)"
+    repeat_number: "Sprinklers Repeat Cycles"
+    # IMPORTANT: this delay is what the compressor will use in winter
+    # and what will add a small pause between zones in summer.
+    valve_open_delay: 40s
+    # NOTE: If your zones require different run durations (e.g. Lawn vs Berries), 
+    # the recommended way is to create separate Home Assistant automations 
+    # for each group using the same Blueprint.
+    valves:
+      - valve_switch: "Lawn Front"
+        run_duration: 10min
+        valve_switch_id: sprinkler_valve_sw0
+      - valve_switch: "Lawn Side Lane"
+        run_duration: 10min
+        valve_switch_id: sprinkler_valve_sw1
+      - valve_switch: "Lawn Backyard South"
+        run_duration: 10min
+        valve_switch_id: sprinkler_valve_sw2
+      - valve_switch: "Lawn Backyard West"
+        run_duration: 10min
+        valve_switch_id: sprinkler_valve_sw4
+      - valve_switch: "Lawn Back North"
+        run_duration: 10min
+        valve_switch_id: sprinkler_valve_sw7
+      - valve_switch: "Dripline Front"
+        run_duration: 10min
+        valve_switch_id: sprinkler_valve_sw3
+      - valve_switch: "Dripline Trees"
+        run_duration: 10min
+        valve_switch_id: sprinkler_valve_sw5
+      - valve_switch: "Dripline Berries"
+        run_duration: 10min
+        valve_switch_id: sprinkler_valve_sw6
+
+switch:
+  # ========= MODE SWITCHES (VIRTUAL) =========
+  - platform: template
+    name: "Test Mode (1 min per zone)"
+    id: sprinklers_test_mode
+    icon: mdi:test-tube
+    turn_on_action:
+      - sprinkler.set_multiplier:
+          id: sprinkler_controller
+          multiplier: 0.1      # 0.1 * 10min = 1 min per zone
+      - sprinkler.set_repeat:
+          id: sprinkler_controller
+          repeat: 0            # 1 cycle total
+      - sprinkler.start_full_cycle: sprinkler_controller
+    turn_off_action:
+      - sprinkler.shutdown: sprinkler_controller
+
+  - platform: template
+    name: "Winter Blowout Mode"
+    id: sprinklers_winter_mode
+    icon: mdi:snowflake
+    turn_on_action:
+      - sprinkler.set_multiplier:
+          id: sprinkler_controller
+          multiplier: 0.025     # 0.025 * 10min = 15s per zone
+      - sprinkler.set_repeat:
+          id: sprinkler_controller
+          repeat: 5            # 6 cycles total
+      - sprinkler.start_full_cycle: sprinkler_controller
+    turn_off_action:
+      - sprinkler.shutdown: sprinkler_controller
+
+  # ========= REAL VALVE RELAYS (PHYSICAL) =========
+  # IMPORTANT: Map these GPIO pins to your specific hardware setup.
+  # The configuration below uses 8 relays as an example.
+  # You can add or remove relay blocks based on your board's capacity and needs.
+  - platform: gpio
+    id: sprinkler_valve_sw0
+    restore_mode: ALWAYS_OFF
+    pin:
+      number: GPIO15
+      inverted: true
+      mode:
+        output: true
+        pullup: true
+  - platform: gpio
+    id: sprinkler_valve_sw1
+    restore_mode: ALWAYS_OFF
+    pin:
+      number: GPIO14
+      inverted: true
+      mode:
+        output: true
+        pullup: true
+  - platform: gpio
+    id: sprinkler_valve_sw2
+    restore_mode: ALWAYS_OFF
+    pin:
+      number: GPIO4
+      inverted: true
+      mode:
+        output: true
+        pullup: true
+  - platform: gpio
+    id: sprinkler_valve_sw3
+    restore_mode: ALWAYS_OFF
+    pin:
+      number: GPIO2
+      inverted: true
+      mode:
+        output: true
+        pullup: true
+  - platform: gpio
+    id: sprinkler_valve_sw4
+    restore_mode: ALWAYS_OFF
+    pin:
+      number: GPIO32
+      inverted: true
+      mode:
+        output: true
+        pullup: true
+  - platform: gpio
+    id: sprinkler_valve_sw5
+    restore_mode: ALWAYS_OFF
+    pin:
+      number: GPIO33
+      inverted: true
+      mode:
+        output: true
+        pullup: true
+  - platform: gpio
+    id: sprinkler_valve_sw6
+    restore_mode: ALWAYS_OFF
+    pin:
+      number: GPIO5
+      inverted: true
+      mode:
+        output: true
+        pullup: true
+  - platform: gpio
+    id: sprinkler_valve_sw7
+    restore_mode: ALWAYS_OFF
+    pin:
+      number: GPIO17
+      inverted: true
+      mode:
+        output: true
+        pullup: true
