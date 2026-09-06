@@ -1,7 +1,8 @@
 blueprint:
-  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter) v2.2
+  name: IKEA MYGGSPRAY E2494 Motion Sensor (Matter) v2.3
   description: 'Full-featured automation for the IKEA MYGGSPRAY E2494 Matter motion sensor. 
-    Supports independent actions for motion, illuminance (high/low), and battery alerts.
+    Supports independent actions for motion, illuminance (high/low), battery alerts, 
+    and smart manual override / automation latch.
     '
   domain: automation
   source_url: https://github.com/aledziko/HA-blueprints/blob/main/IKEA/Matter/ikea-myggspray-e2494/ikea-myggspray-e2494-matter-motion-sensor.yaml
@@ -69,6 +70,31 @@ blueprint:
           max: 10.0
           step: 0.1
           unit_of_measurement: seconds
+
+    # Manual Override / Automation Latch Settings
+    monitored_entity:
+      name: (Optional) Monitored Light / Switch
+      description: >
+        **Manual Override Detection**: Select the light, switch, or group entity controlled by this automation.
+        If this entity is already ON when motion is detected, the blueprint assumes it was turned on manually and will NOT shut it off when motion stops.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: light
+            - domain: switch
+            - domain: group
+    automation_latch_helper:
+      name: (Optional) Automation Latch Helper
+      description: >
+        **Automation Memory**: Select a Toggle helper (`input_boolean`).
+        When paired with a Monitored Entity, the blueprint automatically marks this helper ON when motion turns on the light, and clears it when motion turns off the light.
+        If used without a Monitored Entity, turning this helper ON manually acts as a standard bypass switch to prevent the automation from turning off the light.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
 
     # Illuminance Settings
     illuminance_entity:
@@ -160,6 +186,8 @@ trigger_variables:
   battery_threshold_input: !input battery_low_threshold
   use_time_window_input: !input use_time_window
   safety_delay_input: !input safety_delay
+  monitored_entity_input: !input monitored_entity
+  automation_latch_helper_input: !input automation_latch_helper
 
 triggers:
   - trigger: state
@@ -231,13 +259,54 @@ actions:
                 {% set lux = states(illuminance_entity_input) | float(-1) %}
                 {{ lux == -1 or lux <= cutoff }}
               {% endif %}
+          # Smart Latch: If helper & monitored entity are configured, and the light was OFF:
+          # Turn on the helper to latch that the automation took ownership.
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >-
+                      {{ automation_latch_helper_input not in [none, '', []] and 
+                         monitored_entity_input not in [none, '', []] and 
+                         is_state(monitored_entity_input, 'off') }}
+                sequence:
+                  - action: input_boolean.turn_on
+                    target:
+                      entity_id: !input automation_latch_helper
           - sequence: !input motion_on_action
 
       # MOTION OFF
       - conditions:
           - condition: trigger
             id: motion_off
-        sequence: !input motion_off_action
+        sequence:
+          # Guard condition:
+          # 1. If no helper configured -> proceed normally.
+          # 2. If both helper & monitored entity configured -> only turn off if helper is ON (automation owns session).
+          # 3. If helper configured without monitored entity -> acts as manual bypass switch (only turn off if helper is OFF).
+          - condition: template
+            value_template: >-
+              {% set helper = automation_latch_helper_input %}
+              {% set monitored = monitored_entity_input %}
+              {% if helper in [none, '', []] %}
+                true
+              {% elif monitored not in [none, '', []] %}
+                {{ is_state(helper, 'on') }}
+              {% else %}
+                {{ is_state(helper, 'off') }}
+              {% endif %}
+          - sequence: !input motion_off_action
+          # Reset helper if smart latch mode was used
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >-
+                      {{ automation_latch_helper_input not in [none, '', []] and 
+                         monitored_entity_input not in [none, '', []] and 
+                         is_state(automation_latch_helper_input, 'on') }}
+                sequence:
+                  - action: input_boolean.turn_off
+                    target:
+                      entity_id: !input automation_latch_helper
 
       # LIGHT HIGH
       - conditions:
@@ -256,3 +325,4 @@ actions:
           - condition: trigger
             id: battery_low
         sequence: !input battery_low_action
+

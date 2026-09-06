@@ -11,11 +11,13 @@ If the button above doesn't work, you can copy the URL below and paste it into t
 ## 🌟 Key Features
 
 *   **Flexible Action Selection**: Choose any Home Assistant action for both "Motion Detected" and "Motion Stopped".
+*   **Smart Manual Override & Automation Latch**: Automatically distinguishes between manual turn-on (e.g. wall switch) and motion turn-on. If a light was already turned on manually, the blueprint will NOT shut it off when motion stops.
 *   **Illuminance Cutoff**: Only trigger the "Motion Detected" action if the light level is below your chosen LUX threshold.
 *   **Sunlight-Aware Actions**: Dedicated "High" and "Low" light thresholds to trigger actions when it gets too bright or too dark (e.g., closing/opening curtains).
 *   **Integrated Battery Alerts**: Configurable low-battery monitoring (default 10%).
 *   **Active Hours**: Restrict automation triggers to a specific time window (e.g., only during the night).
 *   **Parallel Mode**: Handles motion timers, light alerts, and battery checks concurrently.
+
 
 ## 💡 Example Use Cases
 
@@ -38,7 +40,22 @@ If the button above doesn't work, you can copy the URL below and paste it into t
 
 Licensed under the **MIT License**.
 
+## 🛡️ Smart Manual Override & Automation Latch
+
+Normally, motion automations shut off lights even if you manually turned them on (e.g., while working or taking a shower). **Smart Manual Override** solves this automatically:
+
+* **Automatic Ownership**: If the light is `OFF` when motion starts, the blueprint turns the light on and sets the helper to `ON` (*"Automation owns this session"*). When motion stops, it safely turns the light off and resets the helper.
+* **Manual Turn-On Protection**: If the light was already `ON` before motion was detected (e.g., turned on via a physical wall switch or app), the blueprint assumes manual control. When motion stops, it will **NOT** turn off the light!
+
+### How to Enable:
+1. **Create a Helper**: Go to **Settings -> Devices & Services -> Helpers**, click **+ Create Helper** -> choose **Toggle** (`input_boolean`). Give it a name like `Living Room Motion Latch`.
+2. **In the Blueprint Settings**:
+   * **Monitored Light / Switch**: Select the light or switch entity that this automation controls.
+   * **Automation Latch Helper**: Select the Toggle helper you created above.
+3. **Save**: The automation now automatically prevents unwanted shutoffs whenever lights are manually turned on!
+
 ---
+
 ## ⚠️ Troubleshooting
 
 ### 💡 Lux Sensor "Ignoring" Threshold?
